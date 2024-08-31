@@ -1,4 +1,4 @@
-// Copyright 2018 The Ebiten Authors
+// Copyright 2018 The Ebiten Authors, syumai
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -258,7 +258,6 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 	g.drawTiles(screen)
 	if g.mode != ModeTitle {
 		g.drawGopher(screen)
