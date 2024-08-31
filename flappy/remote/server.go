@@ -51,14 +51,14 @@ func (s *Server) accept(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (s *Server) start(ctx context.Context, conn *websocket.Conn) error {
-	connectionMsg, err := s.readConnectionMessage(ctx, conn)
+	connectionMsg, err := readConnectionMessage(ctx, conn)
 	if err != nil {
 		return err
 	}
 
 	switch connectionMsg.ConnectionMode {
 	case ConnectionModePublish, ConnectionModeSubscribe:
-		if err := s.writeAcceptationMessage(ctx, conn); err != nil {
+		if err := writeAcceptationMessage(ctx, conn); err != nil {
 			return err
 		}
 	default:
@@ -74,28 +74,6 @@ func (s *Server) start(ctx context.Context, conn *websocket.Conn) error {
 	return nil // unreachable
 }
 
-func (s *Server) readConnectionMessage(ctx context.Context, conn *websocket.Conn) (*ConnectionMessage, error) {
-	var connectionMsg ConnectionMessage
-	if err := wsjson.Read(ctx, conn, &connectionMsg); err != nil {
-		return nil, fmt.Errorf("failed to read connection message: %w", err)
-	}
-	switch connectionMsg.ConnectionMode {
-	case ConnectionModePublish, ConnectionModeSubscribe:
-		// do nothing
-	default:
-		return nil, fmt.Errorf("unknown connection mode %v", connectionMsg.ConnectionMode)
-	}
-	return &connectionMsg, nil
-}
-
-func (s *Server) writeAcceptationMessage(ctx context.Context, conn *websocket.Conn) error {
-	acceptationMsg := AcceptationMessage{AcceptationResult: "OK"}
-	if err := wsjson.Write(ctx, conn, acceptationMsg); err != nil {
-		return fmt.Errorf("failed to write acceptation message: %w", err)
-	}
-	return nil
-}
-
 func (s *Server) startPublishing(ctx context.Context, conn *websocket.Conn) error {
 LOOP:
 	for {
@@ -104,7 +82,7 @@ LOOP:
 			return ctx.Err()
 		default:
 		}
-		m, err := s.readMessage(ctx, conn)
+		m, err := readMessage(ctx, conn)
 		if err != nil {
 			return err
 		}
@@ -151,7 +129,7 @@ func (s *Server) startSubscription(ctx context.Context, conn *websocket.Conn) er
 	}()
 
 	go func() {
-		msg, err := s.readMessage(ctx, conn)
+		msg, err := readMessage(ctx, conn)
 		chMu.Lock()
 		defer chMu.Unlock()
 		select {
@@ -196,19 +174,4 @@ LOOP:
 		}
 	}
 	return nil
-}
-
-func (s *Server) readMessage(ctx context.Context, conn *websocket.Conn) (*Message, error) {
-	var m Message
-	err := wsjson.Read(ctx, conn, &m)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read message: %w", err)
-	}
-	switch m.Type {
-	case MessageTypePublish, MessageTypeClose:
-		// do nothing
-	default:
-		return nil, fmt.Errorf("unknown message type %v", m.Type)
-	}
-	return &m, nil
 }

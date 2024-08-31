@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
+
 	"github.com/coder/websocket"
 )
 
@@ -25,27 +27,80 @@ const WSServerPort = "7382"
 
 var ErrAlreadyClosed = errors.New("already closed")
 
-type Remote struct {
+type Client struct {
 	conn *websocket.Conn
 }
 
-func NewRemote(ctx context.Context) (*Remote, error) {
-	c, _, err := websocket.Dial(ctx, fmt.Sprintf("ws://localhost:%s", WSServerPort), nil)
+func NewClient(ctx context.Context) (*Client, error) {
+	conn, _, err := websocket.Dial(ctx, fmt.Sprintf("ws://localhost:%s", WSServerPort), nil)
 	if err != nil {
 		return nil, err
 	}
-	return &Remote{conn: c}, nil
+	return &Client{conn: conn}, nil
 }
 
-func (r *Remote) Subscribe() error {
+func (c *Client) Subscribe(ctx context.Context) (iter.Seq2[*Message, error], error) {
+	connectionMsg := ConnectionMessage{ConnectionMode: ConnectionModeSubscribe}
+	if err := writeConnectionMessage(ctx, c.conn, &connectionMsg); err != nil {
+		return nil, err
+	}
+	return func(yield func(*Message, error) bool) {
+		for {
+			msg, err := func() (*Message, error) {
+				select {
+				case <-ctx.Done():
+					if err := writeMessage(ctx, c.conn, &Message{Type: MessageTypeClose}); err != nil {
+						return nil, err
+					}
+					return nil, ctx.Err()
+				default:
+				}
+				msg, err := readMessage(ctx, c.conn)
+				if err != nil {
+					return nil, err
+				}
+				if msg.Type != MessageTypePublish {
+					return nil, fmt.Errorf("unexpected message type %v", msg.Type)
+				}
+				return msg, nil
+			}()
 
+			wantNext := yield(msg, err)
+			if !wantNext {
+				return
+			}
+			if err != nil {
+				return
+			}
+		}
+	}, nil
 }
 
-func (r *Remote) Close() error {
-	if r.conn == nil {
+type Publisher struct {
+	conn *websocket.Conn
+}
+
+func (c *Client) NewPublisher(ctx context.Context) (*Publisher, error) {
+	connectionMsg := ConnectionMessage{ConnectionMode: ConnectionModePublish}
+	if err := writeConnectionMessage(ctx, c.conn, &connectionMsg); err != nil {
+		return nil, err
+	}
+	return &Publisher{conn: c.conn}, nil
+}
+
+func (pub *Publisher) Publish(ctx context.Context, msg *Message) error {
+	return writeMessage(ctx, pub.conn, msg)
+}
+
+func (pub *Publisher) Close(ctx context.Context) error {
+	return writeMessage(ctx, pub.conn, &Message{Type: MessageTypeClose})
+}
+
+func (c *Client) Close() error {
+	if c.conn == nil {
 		return ErrAlreadyClosed
 	}
-	c := r.conn
-	r.conn = nil
-	return c.CloseNow()
+	conn := c.conn
+	c.conn = nil
+	return conn.CloseNow()
 }
