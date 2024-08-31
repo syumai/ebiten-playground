@@ -12,33 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package remote
 
-import (
-	"context"
-	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
+type MessageType string
 
-	"github.com/syumai/ebiten-playground/flappy/remote"
-	"golang.org/x/sync/errgroup"
+const (
+	MessageTypePublish MessageType = "message_type_publish"
+	MessageTypeClose   MessageType = "message_type_close"
 )
 
-func main() {
-	s := newServer(remote.WSServerPort)
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+type Message struct {
+	Type MessageType `json:"type"`
+}
 
-	eg, egCtx := errgroup.WithContext(ctx)
-	eg.Go(s.start)
-	eg.Go(func() error {
-		<-egCtx.Done()
-		return s.stop()
-	})
+type ConnectionMode string
 
-	if err := eg.Wait(); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
-	}
+const (
+	ConnectionModeSubscribe ConnectionMode = "connection_mode_subscribe"
+	ConnectionModePublish   ConnectionMode = "connection_mode_publish"
+)
+
+type ConnectionMessage struct {
+	ConnectionMode ConnectionMode `json:"connectionMode"`
 }

@@ -16,33 +16,109 @@ package main
 
 import (
 	"context"
-	"log"
-	"net/http"
-	"time"
-
+	"errors"
+	"fmt"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/syumai/ebiten-playground/flappy/remote"
+	"log"
+	"net/http"
+	"sync"
 )
 
-func handleWebSocket(w http.ResponseWriter, r *http.Request) {
+var errAlreadyClosed = errors.New("already closed")
+
+type remoteServer struct {
+	mu             sync.Mutex
+	conn           *websocket.Conn
+	connectionMode remote.ConnectionMode
+}
+
+func newRemoteServer(w http.ResponseWriter, r *http.Request) (*remoteServer, error) {
 	c, err := websocket.Accept(w, r, nil)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Println("failed to accept websocket connection")
-		return
+		return nil, fmt.Errorf("failed to accept websocket connection: %w", err)
 	}
-	defer c.CloseNow()
+	return &remoteServer{conn: c}, nil
+}
 
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
-	defer cancel()
+func (r *remoteServer) Start(ctx context.Context) error {
+	if err := r.readConnectionMessage(ctx); err != nil {
+		return err
+	}
+	for {
+		m, err := r.readMessage(ctx)
+		if err != nil {
+			return err
+		}
+		switch m.Type {
+		case remote.MessageTypePublish:
+		}
+	}
+}
 
-	var v any
-	err = wsjson.Read(ctx, c, &v)
+func (r *remoteServer) startSubscription(ctx context.Context) error {
+
+}
+
+func (r *remoteServer) readConnectionMessage(ctx context.Context) error {
+	var m remote.ConnectionMessage
+	err := wsjson.Read(ctx, r.conn, &m)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Println("failed to read websocket connection")
-		return
+		return fmt.Errorf("failed to read connection message: %w", err)
+	}
+	switch m.ConnectionMode {
+	case remote.ConnectionModePublish:
+		r.connectionMode = remote.ConnectionModePublish
+	case remote.ConnectionModeSubscribe:
+		r.connectionMode = remote.ConnectionModeSubscribe
+	default:
+		return fmt.Errorf("unknown connection mode %v", m.ConnectionMode)
+	}
+	return nil
+}
+
+func (r *remoteServer) readMessage(ctx context.Context) (*remote.Message, error) {
+	var m remote.Message
+	err := wsjson.Read(ctx, r.conn, &m)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read message: %w", err)
+	}
+	switch m.Type {
+	case remote.MessageTypePublish, remote.MessageTypeClose:
+		// do nothing
+	default:
+		return nil, fmt.Errorf("unknown message type %v", m.Type)
+	}
+	return &m, nil
+}
+
+func (r *remoteServer) Close() error {
+	if r.conn == nil {
+		return errAlreadyClosed
+	}
+	c := r.conn
+	r.conn = nil
+	return c.CloseNow()
+}
+
+func handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	for {
+		var v remote.Message
+		err := wsjson.Read(r.Context(), c, &v)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.Println("failed to read websocket connection")
+			return
+		}
+		if v.Type == remote.MessageTypeClose {
+			break
+		}
 	}
 
-	c.Close(websocket.StatusNormalClosure, "")
+	if err := c.Close(websocket.StatusNormalClosure, ""); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println("failed to close websocket connection")
+		return
+	}
 }

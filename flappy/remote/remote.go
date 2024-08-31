@@ -12,33 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package remote
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-
-	"github.com/syumai/ebiten-playground/flappy/remote"
-	"golang.org/x/sync/errgroup"
+	"github.com/coder/websocket"
 )
 
-func main() {
-	s := newServer(remote.WSServerPort)
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+const WSServerPort = "7382"
 
-	eg, egCtx := errgroup.WithContext(ctx)
-	eg.Go(s.start)
-	eg.Go(func() error {
-		<-egCtx.Done()
-		return s.stop()
-	})
+var ErrAlreadyClosed = errors.New("already closed")
 
-	if err := eg.Wait(); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(1)
+type Remote struct {
+	conn *websocket.Conn
+}
+
+func NewRemote(ctx context.Context) (*Remote, error) {
+	c, _, err := websocket.Dial(ctx, fmt.Sprintf("ws://localhost:%s", WSServerPort), nil)
+	if err != nil {
+		return nil, err
 	}
+	return &Remote{conn: c}, nil
+}
+
+func (r *Remote) Subscribe() error {
+
+}
+
+func (r *Remote) Close() error {
+	if r.conn == nil {
+		return ErrAlreadyClosed
+	}
+	c := r.conn
+	r.conn = nil
+	return c.CloseNow()
 }
