@@ -35,3 +35,7 @@ const (
 type ConnectionMessage struct {
 	ConnectionMode ConnectionMode `json:"connectionMode"`
 }
+
+type AcceptationMessage struct {
+	AcceptationResult string `json:"acceptationResult"`
+}

@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/syumai/ebiten-playground/flappy/remote"
 	"net/http"
 	"time"
 )
@@ -28,10 +29,10 @@ type server struct {
 
 func newServer(port string) *server {
 	addr := fmt.Sprintf(":%s", port)
-	handler := http.HandlerFunc(handleWebSocket)
+	remoteSrv := remote.NewServer()
 	srv := http.Server{
 		Addr:              addr,
-		Handler:           handler,
+		Handler:           remoteSrv,
 		ReadHeaderTimeout: time.Second,
 		ReadTimeout:       5 * time.Minute,
 		WriteTimeout:      5 * time.Minute,

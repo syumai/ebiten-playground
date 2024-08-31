@@ -11,6 +11,7 @@ require (
 	github.com/ebitengine/oto/v3 v3.3.0-alpha.4 // indirect
 	github.com/ebitengine/purego v0.8.0-alpha.5 // indirect
 	github.com/go-text/typesetting v0.1.1 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/jezek/xgb v1.1.1 // indirect
 	github.com/jfreymuth/oggvorbis v1.0.5 // indirect
 	github.com/jfreymuth/vorbis v1.0.2 // indirect
