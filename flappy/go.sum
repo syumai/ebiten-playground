@@ -1,3 +1,5 @@
+github.com/coder/websocket v1.8.12 h1:5bUXkEPPIbewrnkU8LTCLVaxi4N4J8ahufH2vlo4NAo=
+github.com/coder/websocket v1.8.12/go.mod h1:LNVeNrXQZfe5qhS9ALED3uA+l5pPqvwXg3CKoDBB2gs=
 github.com/ebitengine/gomobile v0.0.0-20240825043811-96c531f5bd83 h1:yA0CtFKYZI/db1snCOInRS0Z18QGZU6aBYkqUT0H6RI=
 github.com/ebitengine/gomobile v0.0.0-20240825043811-96c531f5bd83/go.mod h1:n2NbB/F4d9wOXFzC7FT1ipERidmYWC5I4YNOYRs5N7I=
 github.com/ebitengine/hideconsole v1.0.0 h1:5J4U0kXF+pv/DhiXt5/lTz0eO5ogJ1iXb8Yj1yReDqE=

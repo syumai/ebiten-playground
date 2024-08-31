@@ -5,6 +5,7 @@ go 1.23.0
 require github.com/hajimehoshi/ebiten/v2 v2.8.0-alpha.3.0.20240827180357-f98003bcd564
 
 require (
+	github.com/coder/websocket v1.8.12 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20240825043811-96c531f5bd83 // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
 	github.com/ebitengine/oto/v3 v3.3.0-alpha.4 // indirect
