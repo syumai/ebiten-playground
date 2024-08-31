@@ -44,6 +44,9 @@ func (c *Client) Subscribe(ctx context.Context) (iter.Seq2[*Message, error], err
 	if err := writeConnectionMessage(ctx, c.conn, &connectionMsg); err != nil {
 		return nil, err
 	}
+	if err := readAcceptationMessage(ctx, c.conn); err != nil {
+		return nil, err
+	}
 	return func(yield func(*Message, error) bool) {
 		for {
 			msg, err := func() (*Message, error) {
@@ -83,6 +86,9 @@ type Publisher struct {
 func (c *Client) NewPublisher(ctx context.Context) (*Publisher, error) {
 	connectionMsg := ConnectionMessage{ConnectionMode: ConnectionModePublish}
 	if err := writeConnectionMessage(ctx, c.conn, &connectionMsg); err != nil {
+		return nil, err
+	}
+	if err := readAcceptationMessage(ctx, c.conn); err != nil {
 		return nil, err
 	}
 	return &Publisher{conn: c.conn}, nil

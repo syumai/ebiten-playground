@@ -8,6 +8,8 @@ github.com/ebitengine/oto/v3 v3.3.0-alpha.4 h1:w9SD7kK4GgJULkh5pWVTToMA5Ia1bP7Vx
 github.com/ebitengine/oto/v3 v3.3.0-alpha.4/go.mod h1:B+Sz3hzZXcx251YqSPIj+cVMicvlx7Xiq29AEUIbc7E=
 github.com/ebitengine/purego v0.8.0-alpha.5 h1:M0+PSgsdVNczTB8ijX89HmYqCfb2HUuBEx4A+wNuHto=
 github.com/ebitengine/purego v0.8.0-alpha.5/go.mod h1:SQ56/omnSL8DdaBSKswoBvsMjgaWQyxyeMtb48sOskI=
+github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203 h1:XBBHcIb256gUJtLmY22n99HaZTz+r2Z51xUPi01m3wg=
+github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203/go.mod h1:E1jcSv8FaEny+OP/5k9UxZVw9YFWGj7eI4KR/iOBqCg=
 github.com/go-text/typesetting v0.1.1 h1:bGAesCuo85nXnEN5LmFMVGAGpGkCPtHrZLi//qD7EJo=
 github.com/go-text/typesetting v0.1.1/go.mod h1:d22AnmeKq/on0HNv73UFriMKc4Ez6EqZAofLhAzpSzI=
 github.com/go-text/typesetting-utils v0.0.0-20231211103740-d9332ae51f04 h1:zBx+p/W2aQYtNuyZNcTfinWvXBQwYtDfme051PR/lAY=

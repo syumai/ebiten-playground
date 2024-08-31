@@ -17,6 +17,7 @@ package remote
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -37,12 +38,15 @@ func NewServer() *Server {
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err := s.accept(w, r); err != nil {
-		fmt.Fprintf(w, "failed to accept websocket connection: %v", err)
+		log.Printf("failed to accept connection: %v\n", err)
 	}
+	log.Println("connection closed")
 }
 
 func (s *Server) accept(w http.ResponseWriter, r *http.Request) error {
-	conn, err := websocket.Accept(w, r, nil)
+	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+		OriginPatterns: []string{"localhost:5123"},
+	})
 	if err != nil {
 		return fmt.Errorf("failed to accept websocket connection: %w", err)
 	}
@@ -67,8 +71,10 @@ func (s *Server) start(ctx context.Context, conn *websocket.Conn) error {
 
 	switch connectionMsg.ConnectionMode {
 	case ConnectionModePublish:
+		log.Println("publishing started")
 		return s.startPublishing(ctx, conn)
 	case ConnectionModeSubscribe:
+		log.Println("subscription started")
 		return s.startSubscription(ctx, conn)
 	}
 	return nil // unreachable

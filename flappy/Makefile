@@ -4,4 +4,4 @@ build:
 
 .PHONY=serve
 serve:
-	go run github.com/mattn/serve@latest .
+	go run github.com/mattn/serve@latest -a ':5123' .

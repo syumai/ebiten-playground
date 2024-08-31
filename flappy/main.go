@@ -16,6 +16,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"flag"
 	"fmt"
@@ -35,8 +36,8 @@ import (
 	raudio "github.com/hajimehoshi/ebiten/v2/examples/resources/audio"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	resources "github.com/hajimehoshi/ebiten/v2/examples/resources/images/flappy"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/syumai/ebiten-playground/flappy/remote"
 )
 
 var flagCRT = flag.Bool("crt", false, "enable the CRT effect")
@@ -132,15 +133,40 @@ type Game struct {
 	audioContext *audio.Context
 	jumpPlayer   *audio.Player
 	hitPlayer    *audio.Player
+
+	msgCh <-chan *remote.Message
 }
 
-func NewGame(crt bool) ebiten.Game {
-	g := &Game{}
+func NewGame(ctx context.Context, crt bool) (ebiten.Game, error) {
+	msgCh := make(chan *remote.Message)
+	g := &Game{msgCh: msgCh}
 	g.init()
-	if crt {
-		return &GameWithCRTEffect{Game: g}
+	client, err := remote.NewClient(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return g
+	subscription, err := client.Subscribe(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if crt {
+		return &GameWithCRTEffect{Game: g}, nil
+	}
+	go func() {
+		for msg, err := range subscription {
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			log.Println("received message")
+			select {
+			case msgCh <- msg:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return g, nil
 }
 
 func (g *Game) init() {
@@ -177,36 +203,12 @@ func (g *Game) init() {
 }
 
 func (g *Game) isKeyJustPressed() bool {
-	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+	select {
+	case <-g.msgCh:
 		return true
+	default:
+		return false
 	}
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		return true
-	}
-	g.touchIDs = inpututil.AppendJustPressedTouchIDs(g.touchIDs[:0])
-	if len(g.touchIDs) > 0 {
-		return true
-	}
-	g.gamepadIDs = ebiten.AppendGamepadIDs(g.gamepadIDs[:0])
-	for _, g := range g.gamepadIDs {
-		if ebiten.IsStandardGamepadLayoutAvailable(g) {
-			if inpututil.IsStandardGamepadButtonJustPressed(g, ebiten.StandardGamepadButtonRightBottom) {
-				return true
-			}
-			if inpututil.IsStandardGamepadButtonJustPressed(g, ebiten.StandardGamepadButtonRightRight) {
-				return true
-			}
-		} else {
-			// The button 0/1 might not be A/B buttons.
-			if inpututil.IsGamepadButtonJustPressed(g, ebiten.GamepadButton0) {
-				return true
-			}
-			if inpututil.IsGamepadButtonJustPressed(g, ebiten.GamepadButton1) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -468,7 +470,15 @@ func main() {
 	flag.Parse()
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Flappy Gopher (Ebitengine Demo)")
-	if err := ebiten.RunGame(NewGame(*flagCRT)); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	game, err := NewGame(ctx, *flagCRT)
+	if err != nil {
+		panic(err)
+	}
+	if err := ebiten.RunGameWithOptions(game, &ebiten.RunGameOptions{
+		ScreenTransparent: true,
+	}); err != nil {
 		panic(err)
 	}
 }
