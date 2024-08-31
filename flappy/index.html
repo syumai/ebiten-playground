@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+body {
+  background-color: transparent !important;
+}
+    </style>
+    <title>Flappy Gopher</title>
+  </head>
+  <body>
+    <script src="./js/wasm_exec.js"></script>
+    <script type="module">
+      const go = new Go();
+      const result = await WebAssembly.instantiateStreaming(fetch("./main.wasm"), go.importObject);
+      go.run(result.instance);
+    </script>
+  </body>
+</html>
