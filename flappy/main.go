@@ -62,14 +62,14 @@ func floorMod(x, y int) int {
 }
 
 const (
-	screenWidth      = 640
-	screenHeight     = 480
+	screenWidth      = 1120
+	screenHeight     = 630
 	tileSize         = 32
 	titleFontSize    = fontSize * 1.5
 	fontSize         = 24
 	smallFontSize    = fontSize / 2
 	pipeWidth        = tileSize * 2
-	pipeStartOffsetX = 8
+	pipeStartOffsetX = 11
 	pipeIntervalX    = 8
 	pipeGapY         = 5
 )
